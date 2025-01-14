@@ -1,7 +1,7 @@
 import soundfile as sf
 import numpy as np
 
-def stretch_audio(input_file, output_file, stretch_factor=2):
+def stretch_audio_at_zero_crossings(input_file, output_file, stretch_factor=2):
     # 音声データを読み込む
     data, samplerate = sf.read(input_file)
     
@@ -13,36 +13,21 @@ def stretch_audio(input_file, output_file, stretch_factor=2):
     else:
         audio = data
 
-    # 音量が0の箇所を検出
-    silence_threshold = 1e-4  # 音量0と見なす閾値
-    silence_positions = np.where(np.abs(audio) < silence_threshold)[0]
-    
-    # 無音区間の開始位置と終了位置を特定
-    silence_intervals = []
-    if len(silence_positions) > 0:
-        start = silence_positions[0]
-        for i in range(1, len(silence_positions)):
-            if silence_positions[i] != silence_positions[i - 1] + 1:
-                end = silence_positions[i - 1]
-                silence_intervals.append((start, end))
-                start = silence_positions[i]
-        silence_intervals.append((start, silence_positions[-1]))
+    # ゼロクロスを検出
+    zero_crossings = np.where(np.diff(np.sign(audio)) != 0)[0]
 
-    # 各無音区間間のセグメントを複製して引き伸ばし
+    # ゼロクロス地点で音声を区間ごとに分けて複製
     new_audio = []
-    prev_end = 0
-    for start, end in silence_intervals:
-        # 無音区間までの音声を追加
-        new_audio.append(audio[prev_end:start])
-        
-        # 無音区間を含むセグメントを複製
-        segment = audio[prev_end:end + 1]
+    prev_crossing = 0
+    for crossing in zero_crossings:
+        # 区間を取得
+        segment = audio[prev_crossing:crossing]
+        # 複製
         new_audio.extend([segment] * stretch_factor)
-        
-        prev_end = end + 1
+        prev_crossing = crossing
 
-    # 最後のセグメントを追加
-    new_audio.append(audio[prev_end:])
+    # 最後の区間を追加
+    new_audio.append(audio[prev_crossing:])
     
     # 音声データを結合
     new_audio = np.concatenate(new_audio)
@@ -54,8 +39,7 @@ def stretch_audio(input_file, output_file, stretch_factor=2):
     # 新しい音声データを保存
     sf.write(output_file, new_audio, samplerate)
 
-# 使用例
-input_file = "input.wav"
+input_file = "test.wav"
 output_file = "output_stretched.wav"
-stretch_factor = 3  # 複製回数
-stretch_audio(input_file, output_file, stretch_factor)
+stretch_factor = 3
+stretch_audio_at_zero_crossings(input_file, output_file, stretch_factor)
