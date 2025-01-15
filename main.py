@@ -1,5 +1,7 @@
 import soundfile as sf
 import librosa
+import glob
+import os
 
 def stretch_audio_at_zero_crossings(input_file, output_file, stretch_factor=2):
     # 音声データ読み込み
@@ -11,7 +13,11 @@ def stretch_audio_at_zero_crossings(input_file, output_file, stretch_factor=2):
     # wavファイルを保存
     sf.write(output_file, output_audio, sr)
 
-input_file = "test.wav"
 output_file = "output_stretched.wav"
 stretch_factor = 5
-stretch_audio_at_zero_crossings(input_file, output_file, stretch_factor)
+dir_path = "./"
+
+file_list = glob.glob(os.path.join(dir_path, ".wav"))
+
+for input_file in file_list:
+    stretch_audio_at_zero_crossings(input_file, output_file, stretch_factor)
